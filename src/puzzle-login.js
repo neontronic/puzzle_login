@@ -145,6 +145,16 @@
     };
   };
 
+  PuzzleMaze.prototype._landingPad = function (col, edge) {
+    var cell = this._cellSize();
+    var size = Math.min(cell.w, cell.h) * 0.55;
+    return {
+      x: col * cell.w + (cell.w - size) / 2,
+      y: edge === 'top' ? 5 : this.canvas.height - size - 5,
+      size: size
+    };
+  };
+
   // Convert canvas-relative pixel to maze cell
   PuzzleMaze.prototype._toCell = function (px, py) {
     var cell = this._cellSize();
@@ -167,7 +177,7 @@
 
     // Draw cells
     ctx.strokeStyle = WALL_COLOR;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 4;
     for (var r = 0; r < ROWS; r++) {
       for (var c = 0; c < COLS; c++) {
         var cell = this.maze[r][c];
@@ -199,13 +209,20 @@
       }
     }
 
-    // Entrance indicator (top)
-    ctx.fillStyle = ENTRANCE_COLOR;
-    ctx.fillRect(this.entranceCol * cw + 4, 0, cw - 8, 5);
+    // Square landing pads mark the start and finish points.
+    var entrancePad = this._landingPad(this.entranceCol, 'top');
+    var exitPad = this._landingPad(this.exitCol, 'bottom');
+    ctx.lineWidth = 2;
 
-    // Exit indicator (bottom)
+    ctx.fillStyle = ENTRANCE_COLOR;
+    ctx.fillRect(entrancePad.x, entrancePad.y, entrancePad.size, entrancePad.size);
+    ctx.strokeStyle = '#b85f16';
+    ctx.strokeRect(entrancePad.x, entrancePad.y, entrancePad.size, entrancePad.size);
+
     ctx.fillStyle = EXIT_COLOR;
-    ctx.fillRect(this.exitCol * cw + 4, H - 5, cw - 8, 5);
+    ctx.fillRect(exitPad.x, exitPad.y, exitPad.size, exitPad.size);
+    ctx.strokeStyle = '#1a7a45';
+    ctx.strokeRect(exitPad.x, exitPad.y, exitPad.size, exitPad.size);
 
     // Draggable circle
     ctx.beginPath();
@@ -335,10 +352,26 @@
     function onMove(e) {
       if (!self.dragging || self.solved) return;
       e.preventDefault();
-      var pos = getPos(e);
-      if (self._isValidPosition(pos.x, pos.y)) {
-        self.cx = pos.x;
-        self.cy = pos.y;
+      var target = getPos(e);
+      var dx = target.x - self.cx;
+      var dy = target.y - self.cy;
+      var dist = Math.hypot(dx, dy);
+      // Step ≤ half the radius so no wall segment can be skipped
+      var stepSize = self.radius * 0.5;
+      var steps = Math.ceil(dist / stepSize);
+      if (steps > 0) {
+        var sx = dx / steps;
+        var sy = dy / steps;
+        for (var i = 0; i < steps; i++) {
+          var nx = self.cx + sx;
+          var ny = self.cy + sy;
+          if (self._isValidPosition(nx, ny)) {
+            self.cx = nx;
+            self.cy = ny;
+          } else {
+            break;
+          }
+        }
       }
       self._render();
       self._checkSolved();
@@ -371,16 +404,17 @@
   };
 
   PuzzleMaze.prototype._checkSolved = function () {
-    var H = this.canvas.height;
-    // Solved when circle centre passes below the last row
-    if (this.cy >= H + this.radius * 0.5) {
-      var col = Math.floor(this.cx / (this.canvas.width / COLS));
-      if (col === this.exitCol) {
-        this.solved = true;
-        this._render();
-        if (typeof this.opts.onSolved === 'function') {
-          this.opts.onSolved();
-        }
+    var pad = this._landingPad(this.exitCol, 'bottom');
+    var nearestX = Math.max(pad.x, Math.min(this.cx, pad.x + pad.size));
+    var nearestY = Math.max(pad.y, Math.min(this.cy, pad.y + pad.size));
+    var dx = this.cx - nearestX;
+    var dy = this.cy - nearestY;
+
+    if (dx * dx + dy * dy <= this.radius * this.radius) {
+      this.solved = true;
+      this._render();
+      if (typeof this.opts.onSolved === 'function') {
+        this.opts.onSolved();
       }
     }
   };
@@ -436,6 +470,7 @@
     _instance: null,
 
     init: function (opts) {
+      if (this._instance) this.destroy();
       opts = opts || {};
 
       var title = opts.title || 'Prove you\'re human';
@@ -447,14 +482,16 @@
       overlay.className = 'puzzle-login-overlay';
       overlay.setAttribute('role', 'dialog');
       overlay.setAttribute('aria-modal', 'true');
-      overlay.setAttribute('aria-label', title);
+      overlay.setAttribute('tabindex', '-1');
 
       var box = document.createElement('div');
       box.className = 'puzzle-login-box';
 
       var titleEl = document.createElement('p');
       titleEl.className = 'puzzle-login-title';
+      titleEl.id = 'puzzle-login-title-' + Date.now();
       titleEl.textContent = title;
+      overlay.setAttribute('aria-labelledby', titleEl.id);
 
       var subtitleEl = document.createElement('p');
       subtitleEl.className = 'puzzle-login-subtitle';
@@ -482,6 +519,8 @@
         { dir: 'right', label: '▶', cls: 'puzzle-dpad-right', ariaLabel: 'Move right' }
       ];
 
+      var dpadStopFns = [];
+
       dpadDirections.forEach(function (d) {
         var btn = document.createElement('button');
         btn.className = 'puzzle-dpad-btn ' + d.cls;
@@ -505,9 +544,12 @@
           holdInterval = null;
         }
 
+        dpadStopFns.push(stopMove);
+
         btn.addEventListener('mousedown', startMove);
         btn.addEventListener('mouseup', stopMove);
         btn.addEventListener('mouseleave', stopMove);
+        btn.addEventListener('pointercancel', stopMove);
         btn.addEventListener('touchstart', startMove, { passive: false });
         btn.addEventListener('touchend', stopMove, { passive: false });
 
@@ -521,15 +563,21 @@
 
       var resetBtn = document.createElement('button');
       resetBtn.className = 'puzzle-login-reset';
-      resetBtn.textContent = 'New maze';
+      resetBtn.textContent = '↻';
+      resetBtn.setAttribute('aria-label', 'New maze');
+      resetBtn.title = 'New maze';
       resetBtn.type = 'button';
+
+      var controls = document.createElement('div');
+      controls.className = 'puzzle-controls';
+      controls.appendChild(dpad);
+      controls.appendChild(resetBtn);
 
       box.appendChild(titleEl);
       box.appendChild(subtitleEl);
       box.appendChild(wrapper);
-      box.appendChild(dpad);
+      box.appendChild(controls);
       box.appendChild(status);
-      box.appendChild(resetBtn);
       overlay.appendChild(box);
 
       // Determine container
@@ -538,10 +586,38 @@
         container = typeof opts.container === 'string'
           ? document.querySelector(opts.container)
           : opts.container;
+        if (!container) {
+          throw new Error('puzzle-login: container "' + opts.container + '" not found');
+        }
       } else {
         container = document.body;
       }
+
+      var previousFocus = document.activeElement;
+
+      function trapFocus(e) {
+        if (e.key !== 'Tab') return;
+        var els = overlay.querySelectorAll('button');
+        var first = els[0];
+        var last = els[els.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+        } else {
+          if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+      }
+
+      function closeWidget() {
+        overlay.removeEventListener('keydown', trapFocus);
+        overlay.remove();
+        if (previousFocus && previousFocus.focus) previousFocus.focus();
+      }
+
+      overlay.addEventListener('keydown', trapFocus);
       container.appendChild(overlay);
+
+      var focusable = overlay.querySelectorAll('button');
+      if (focusable.length) focusable[0].focus();
 
       // Bot-detection heuristic: track whether mouse movement was used
       var humanInteraction = false;
@@ -562,15 +638,14 @@
           if (typeof opts.onSuccess === 'function') {
             setTimeout(function () {
               opts.onSuccess();
-              overlay.remove();
+              closeWidget();
             }, 600);
           } else if (opts.redirectUrl) {
             setTimeout(function () {
               window.location.href = opts.redirectUrl;
             }, 600);
           } else {
-            // Just remove the overlay
-            setTimeout(function () { overlay.remove(); }, 800);
+            setTimeout(function () { closeWidget(); }, 800);
           }
         }
       };
@@ -586,14 +661,15 @@
         maze.reset();
       });
 
-      this._instance = { overlay: overlay, maze: maze };
+      this._instance = { overlay: overlay, maze: maze, dpadStopFns: dpadStopFns, close: closeWidget };
       return this._instance;
     },
 
     destroy: function () {
       if (this._instance) {
+        this._instance.dpadStopFns.forEach(function (fn) { fn(); });
         this._instance.maze.destroy();
-        this._instance.overlay.remove();
+        this._instance.close();
         this._instance = null;
       }
     }

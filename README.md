@@ -6,6 +6,8 @@ through a small 4:3 maze from the top entrance to the bottom exit.
 This acts as a lightweight bot deterrent while remaining frictionless for
 human visitors.
 
+> **Security note:** Puzzle completion is validated client-side only. Always verify completion server-side before granting access to any protected resource.
+
 ---
 
 ## Features
