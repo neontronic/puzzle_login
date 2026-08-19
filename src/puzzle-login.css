@@ -1,0 +1,85 @@
+.puzzle-login-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.puzzle-login-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 28px 24px 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 340px;
+  width: 90vw;
+}
+
+.puzzle-login-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #222;
+  margin: 0;
+  text-align: center;
+}
+
+.puzzle-login-subtitle {
+  font-size: 0.82rem;
+  color: #666;
+  margin: -10px 0 0;
+  text-align: center;
+}
+
+/* Maze canvas wrapper keeps 4:3 ratio */
+.puzzle-maze-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  max-width: 270px;
+  border: 2px solid #d0d0d0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8f8f8;
+  touch-action: none;
+  user-select: none;
+}
+
+.puzzle-maze-wrapper canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.puzzle-login-status {
+  font-size: 0.85rem;
+  font-weight: 500;
+  min-height: 1.2em;
+  color: #c0392b;
+  text-align: center;
+}
+
+.puzzle-login-status.success {
+  color: #27ae60;
+}
+
+.puzzle-login-reset {
+  background: none;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  padding: 6px 16px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  color: #555;
+  transition: background 0.15s;
+}
+
+.puzzle-login-reset:hover {
+  background: #f0f0f0;
+}
