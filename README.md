@@ -12,6 +12,7 @@ human visitors.
 
 - 🧩 **Randomly generated** perfect maze (every run is unique; seeded for tests)
 - 🖱️ **Drag-to-navigate** circle with wall-collision detection
+- 🕹️ **D-pad buttons** – four directional arrow buttons below the maze so mobile users can navigate without their finger obscuring the view
 - 📱 **Touch-friendly** (works on mobile browsers)
 - 🤖 **Bot-detection heuristic** – validates that real mouse/touch movement occurred
 - ♿ **Accessible** – ARIA roles, `aria-live` status region

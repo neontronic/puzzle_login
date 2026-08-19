@@ -83,3 +83,44 @@
 .puzzle-login-reset:hover {
   background: #f0f0f0;
 }
+
+/* ── D-pad directional controls ─────────────────────────────────────────── */
+
+.puzzle-dpad {
+  display: grid;
+  grid-template-areas:
+    ".    up   ."
+    "left down right";
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 4px;
+  width: 130px;
+}
+
+.puzzle-dpad-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  border: 1px solid #bbb;
+  background: #f4f4f4;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #333;
+  transition: background 0.12s, transform 0.08s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.puzzle-dpad-btn:active {
+  background: #dde4ef;
+  transform: scale(0.92);
+}
+
+.puzzle-dpad-up    { grid-area: up;    justify-self: center; }
+.puzzle-dpad-left  { grid-area: left;  justify-self: end; }
+.puzzle-dpad-down  { grid-area: down;  justify-self: center; }
+.puzzle-dpad-right { grid-area: right; justify-self: start; }

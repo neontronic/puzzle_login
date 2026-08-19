@@ -385,6 +385,30 @@
     }
   };
 
+  /**
+   * Move the circle one step in the given direction ('up','down','left','right').
+   * The step size is one quarter of the cell dimension, so several presses are
+   * needed to cross a cell – this gives fine-grained control and still respects
+   * wall collisions.
+   */
+  PuzzleMaze.prototype.moveInDirection = function (dir) {
+    if (this.solved) return;
+    var cell = this._cellSize();
+    var step = Math.min(cell.w, cell.h) * 0.25;
+    var nx = this.cx;
+    var ny = this.cy;
+    if (dir === 'up')    ny -= step;
+    if (dir === 'down')  ny += step;
+    if (dir === 'left')  nx -= step;
+    if (dir === 'right') nx += step;
+    if (this._isValidPosition(nx, ny)) {
+      this.cx = nx;
+      this.cy = ny;
+    }
+    this._render();
+    this._checkSolved();
+  };
+
   PuzzleMaze.prototype.reset = function () {
     this._unbindEvents && this._unbindEvents();
     this._build();
@@ -446,6 +470,50 @@
 
       wrapper.appendChild(canvas);
 
+      // D-pad directional controls
+      var dpad = document.createElement('div');
+      dpad.className = 'puzzle-dpad';
+      dpad.setAttribute('aria-label', 'Directional controls');
+
+      var dpadDirections = [
+        { dir: 'up',    label: '▲', cls: 'puzzle-dpad-up',    ariaLabel: 'Move up' },
+        { dir: 'left',  label: '◀', cls: 'puzzle-dpad-left',  ariaLabel: 'Move left' },
+        { dir: 'down',  label: '▼', cls: 'puzzle-dpad-down',  ariaLabel: 'Move down' },
+        { dir: 'right', label: '▶', cls: 'puzzle-dpad-right', ariaLabel: 'Move right' }
+      ];
+
+      dpadDirections.forEach(function (d) {
+        var btn = document.createElement('button');
+        btn.className = 'puzzle-dpad-btn ' + d.cls;
+        btn.type = 'button';
+        btn.textContent = d.label;
+        btn.setAttribute('aria-label', d.ariaLabel);
+
+        var holdInterval = null;
+
+        function startMove(e) {
+          e.preventDefault();
+          humanInteraction = true;
+          maze.moveInDirection(d.dir);
+          holdInterval = setInterval(function () {
+            maze.moveInDirection(d.dir);
+          }, 120);
+        }
+
+        function stopMove() {
+          clearInterval(holdInterval);
+          holdInterval = null;
+        }
+
+        btn.addEventListener('mousedown', startMove);
+        btn.addEventListener('mouseup', stopMove);
+        btn.addEventListener('mouseleave', stopMove);
+        btn.addEventListener('touchstart', startMove, { passive: false });
+        btn.addEventListener('touchend', stopMove, { passive: false });
+
+        dpad.appendChild(btn);
+      });
+
       var status = document.createElement('p');
       status.className = 'puzzle-login-status';
       status.setAttribute('aria-live', 'polite');
@@ -459,6 +527,7 @@
       box.appendChild(titleEl);
       box.appendChild(subtitleEl);
       box.appendChild(wrapper);
+      box.appendChild(dpad);
       box.appendChild(status);
       box.appendChild(resetBtn);
       overlay.appendChild(box);
