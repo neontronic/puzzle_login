@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Puzzle Login – Demo</title>
+  <link rel="stylesheet" href="src/puzzle-login.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #eef2f7;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 24px;
+    }
+    h1 { color: #2c3e50; margin: 0; }
+    p  { color: #555; margin: 0; text-align: center; max-width: 400px; }
+    button {
+      padding: 10px 28px;
+      border-radius: 8px;
+      border: none;
+      background: #3498db;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover { background: #2176ae; }
+    #welcome {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    #welcome.visible { display: flex; }
+  </style>
+</head>
+<body>
+  <h1>Puzzle Login Demo</h1>
+  <p>Click the button below to launch the puzzle login widget.</p>
+  <button id="loginBtn">Open Puzzle Login</button>
+
+  <div id="welcome">
+    <h2 style="color:#27ae60">🎉 Welcome!</h2>
+    <p>You solved the maze and are now logged in.</p>
+  </div>
+
+  <script src="src/puzzle-login.js"></script>
+  <script>
+    document.getElementById('loginBtn').addEventListener('click', function () {
+      PuzzleLogin.init({
+        onSuccess: function () {
+          document.getElementById('welcome').classList.add('visible');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
